@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="colorPrimary">#3A3E41</color>
+    <color name="colorPrimaryDark">#3A3E41</color>
+    <color name="colorAccent">#e74c3c</color>
+    <color name="colorDark">#1e192e</color>
+    <color name="superDark">#000000</color>
+    <color name="lightGray">#372e4a</color>
+    <color name="lightTextFieldColor">#57506a</color>
+    <color name = "labels_colors">#464055</color>
+    <color name="button_color">#0cecda</color>
+    <color name="swipe_text_color">#0cecda</color>
+    <color name="textfield_active">#372e4a</color>
+    <color name="transparentColor">#00000000</color>
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="colorLightGray">#819ca9</color>
+    <color name="button_color_for_invalid_otp">#F11A07</color>
+    <!--for library flat color-->
+    <color name="gray">#2b2b2b</color>
+    <color name="sub_header">#8d8d8d</color>
+    <color name="successColor">#00e676</color>
+    <color name="button_color_otp">#00F87C</color>
+    <color name="button_color_wifi">#0b716f</color>
+    <color name="fbutton_color_turquoise">#1abc9c</color>
+    <color name="fbutton_color_green_sea">#16a085</color>
+    <color name="fbutton_color_emerald">#2ecc71</color>
+    <color name="fbutton_color_nephritis">#27ae60</color>
+    <color name="fbutton_color_peter_river">#3498db</color>
+    <color name="fbutton_color_belize_hole">#2980b9</color>
+    <color name="fbutton_color_amethyst">#9b59b6</color>
+    <color name="fbutton_color_wisteria">#8e44ad</color>
+    <color name="fbutton_color_wet_asphalt">#34495e</color>
+    <color name="fbutton_color_midnight_blue">#2c3e50</color>
+    <color name="fbutton_color_sun_flower">#f1c40f</color>
+    <color name="fbutton_color_orange">#f39c12</color>
+    <color name="fbutton_color_carrot">#e67e22</color>
+    <color name="fbutton_color_pumpkin">#d35400</color>
+    <color name="fbutton_color_alizarin">#e74c3c</color>
+    <color name="fbutton_color_pomegranate">#c0392b</color>
+    <color name="fbutton_color_clouds">#ecf0f1</color>
+    <color name="fbutton_color_silver">#bdc3c7</color>
+    <color name="fbutton_color_concrete">#95a5a6</color>
+    <color name="fbutton_color_asbestos">#7f8c8d</color>
+</resources>
