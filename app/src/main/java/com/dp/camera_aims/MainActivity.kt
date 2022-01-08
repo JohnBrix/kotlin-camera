@@ -8,6 +8,7 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.os.Bundle
 import android.os.Environment
+import android.os.StrictMode
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
@@ -17,6 +18,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.cloudinary.Cloudinary
+import com.cloudinary.Transformation
+import com.cloudinary.utils.ObjectUtils
 import com.dp.camera_aims.service.ImageSaverImplService
 import java.io.File
 import java.io.IOException
@@ -34,7 +38,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
         selectImage = findViewById<ImageView>(R.id.take_photo_view)
         selectImage.setOnClickListener(View.OnClickListener { takePicture() })
 
@@ -117,6 +122,9 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
+    private val cloudinary =
+        Cloudinary("cloudinary://651998212777852:zmLnemqvVP3LI_2HDe1fPB4oG7M@johnsad")
+
     fun capture(requestCode: Int, resultCode: Int) {
         if (requestCode == CAPTURE_IMAGE_REQUEST && resultCode == RESULT_OK) {
             try {
@@ -127,6 +135,23 @@ class MainActivity : AppCompatActivity() {
                     .setDirectoryName(storageDirectory?.absolutePath)
                     ?.setFileName(originalImage.name)
                     ?.load()
+
+                cloudinary.uploader().upload(
+                    "${originalImage}",
+                    ObjectUtils.asMap(
+                        "transformation",
+                        Transformation<Transformation<*>>()
+                            .width(300)
+                            .height(300) /*Height the one who limit*/
+                            .crop("limit")
+                    )
+                )
+
+                /*RAW UPLOAD*/
+                /* cloudinary.uploader().upload(File("$originalImage"),
+                     ObjectUtils.asMap("sample", "tete")) *//*sample folder*/
+                Log.i("PUTANGNA MO", "${originalImage}")
+
 
                 var resizedImageBitmap = originalImageBitmap
                 val matrix = Matrix()
@@ -169,7 +194,7 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
 
-
+                /*todo saved in local*/
                 if (rotatedBitmap != null) {
                     if (storageDirectory != null) {
                         ImageSaverImplService(this)
@@ -179,11 +204,13 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                Log.i("test", "Notworking")
+
+
 
 
                 Log.i("test", "Working")
                 selectImage.setImageBitmap(rotatedBitmap)
+
                 originalImage!!.delete()
             } catch (e: IOException) {
                 e.printStackTrace()
@@ -194,153 +221,4 @@ class MainActivity : AppCompatActivity() {
             originalImage?.delete()
         }
     }
-
 }
-
-
-//    var fotoapparat: Fotoapparat? = null
-//    val filename = "test.png"
-//    val sd = Environment.DIRECTORY_PICTURES
-//    val dest = File(sd, filename)
-//    var fotoapparatState: FotoapparatState? = null
-//    var cameraStatus: CameraState? = null
-//    var flashState: FlashState? = null
-//
-//    val permissions = arrayOf(
-//        android.Manifest.permission.CAMERA,
-//        android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-//        android.Manifest.permission.READ_EXTERNAL_STORAGE
-//    )
-//
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        setContentView(R.layout.activity_main)
-//
-//        var fab_camera = findViewById<FloatingActionButton>(R.id.fab_camera)
-//        var fab_switch_camera = findViewById<FloatingActionButton>(R.id.fab_switch_camera)
-//        var fab_flash = findViewById<FloatingActionButton>(R.id.fab_flash)
-//        createFotoapparat()
-//
-//        cameraStatus = CameraState.BACK
-//        flashState = FlashState.OFF
-//        fotoapparatState = FotoapparatState.OFF
-//
-//        fab_camera.setOnClickListener {
-//            takePhoto()
-//        }
-//
-//        fab_switch_camera.setOnClickListener {
-//            switchCamera()
-//        }
-//
-//        fab_flash.setOnClickListener {
-//            changeFlashState()
-//        }
-//    }
-//
-//    private fun createFotoapparat() {
-//        val cameraView = findViewById<CameraView>(R.id.camera_view)
-//
-//        fotoapparat = Fotoapparat(
-//            context = this,
-//            view = cameraView,
-//            scaleType = ScaleType.CenterCrop,
-//            lensPosition = back(),
-//            logger = loggers(
-//                logcat()
-//            ),
-//            cameraErrorCallback = { error ->
-//                println("Recorder errors: $error")
-//            }
-//        )
-//    }
-//
-//    private fun changeFlashState() {
-//        fotoapparat?.updateConfiguration(
-//            CameraConfiguration(
-//                flashMode = if (flashState == FlashState.TORCH) off() else torch()
-//            )
-//        )
-//
-//        if (flashState == FlashState.TORCH) flashState = FlashState.OFF
-//        else flashState = FlashState.TORCH
-//    }
-//
-//    private fun switchCamera() {
-//        fotoapparat?.switchTo(
-//            lensPosition = if (cameraStatus == CameraState.BACK) front() else back(),
-//            cameraConfiguration = CameraConfiguration()
-//        )
-//
-//        if (cameraStatus == CameraState.BACK) cameraStatus = CameraState.FRONT
-//        else cameraStatus = CameraState.BACK
-//    }
-//
-//    private fun takePhoto() {
-//        if (hasNoPermissions()) {
-//            requestPermission()
-//        } else {
-//            fotoapparat
-//                ?.takePicture()
-//                ?.saveToFile(dest)
-//        }
-//    }
-//
-//    override fun onStart() {
-//        super.onStart()
-//        if (hasNoPermissions()) {
-//            requestPermission()
-//        } else {
-//            fotoapparat?.start()
-//            fotoapparatState = FotoapparatState.ON
-//        }
-//    }
-//
-//    private fun hasNoPermissions(): Boolean {
-//        return ContextCompat.checkSelfPermission(
-//            this,
-//            Manifest.permission.READ_EXTERNAL_STORAGE
-//        ) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
-//            this,
-//            Manifest.permission.WRITE_EXTERNAL_STORAGE
-//        ) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
-//            this,
-//            Manifest.permission.CAMERA
-//        ) != PackageManager.PERMISSION_GRANTED
-//    }
-//
-//    fun requestPermission() {
-//        ActivityCompat.requestPermissions(this, permissions, 0)
-//    }
-//
-//    override fun onStop() {
-//        super.onStop()
-//        fotoapparat?.stop()
-//        FotoapparatState.OFF
-//    }
-//
-//    override fun onResume() {
-//        super.onResume()
-//        if (!hasNoPermissions() && fotoapparatState == FotoapparatState.OFF) {
-//            val intent = Intent(baseContext, MainActivity::class.java)
-//            startActivity(intent)
-//            finish()
-//        }
-//    }
-
-/*}
-
-enum class CameraState {
-    FRONT, BACK
-}
-
-enum class FlashState {
-    TORCH, OFF
-}
-
-enum class FotoapparatState {
-    ON, OFF
-}*/
-
-
-
