@@ -16,6 +16,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
+
             <ImageView
                 android:id="@+id/take_photo_view"
                 android:layout_width="150dp"
@@ -23,6 +24,7 @@
                 android:layout_gravity="end"
                 android:background="@drawable/image_view_border"
                 android:src="@drawable/ic_take_photo_logo" />
+
 
             <TextView
                 android:layout_width="wrap_content"
@@ -33,6 +35,15 @@
                 android:text="@string/takePhoto"
                 android:textColor="@color/colorWhite"
                 android:textSize="15sp" />
+
+            <com.github.ybq.android.spinkit.SpinKitView
+                android:id="@+id/progBar"
+                style="@style/SpinKitView.Large.ThreeBounce"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_gravity="center"
+                app:SpinKit_Color="@color/fbutton_color_silver" />
 
             <TextView
                 android:layout_width="wrap_content"

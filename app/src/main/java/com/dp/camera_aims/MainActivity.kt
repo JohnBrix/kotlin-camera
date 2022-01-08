@@ -1,6 +1,8 @@
 package com.dp.camera_aims
 
 import android.Manifest
+import android.app.ActivityManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -8,21 +10,30 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.os.Bundle
 import android.os.Environment
+import android.os.Process.getUidForName
+import android.os.Process.killProcess
 import android.os.StrictMode
 import android.provider.MediaStore
 import android.util.Log
-import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.bumptech.glide.Glide
 import com.cloudinary.Cloudinary
 import com.cloudinary.Transformation
 import com.cloudinary.utils.ObjectUtils
 import com.dp.camera_aims.service.ImageSaverImplService
+import com.github.ybq.android.spinkit.SpinKitView
+import com.github.ybq.android.spinkit.animation.AnimationUtils.stop
+import leakcanary.AppWatcher
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
@@ -30,18 +41,25 @@ import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var selectImage: ImageView
-    lateinit var originalImage: File
-    lateinit var resizedImage: File
-    val CAPTURE_IMAGE_REQUEST = 1
+    private lateinit var selectImage: ImageView
+    private lateinit var btn: Button
+    private lateinit var loadingScreen: SpinKitView
+    private lateinit var originalImage: File
+    private lateinit var resizedImage: File
+    private val CAPTURE_IMAGE_REQUEST = 1
+
+    private val cloudinary =
+        Cloudinary("cloudinary://651998212777852:zmLnemqvVP3LI_2HDe1fPB4oG7M@johnsad")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
-        StrictMode.setThreadPolicy(policy)
-        selectImage = findViewById<ImageView>(R.id.take_photo_view)
-        selectImage.setOnClickListener(View.OnClickListener { takePicture() })
+        AppWatcher.objectWatcher.watch(this, "View was detached")
+        selectImage = findViewById(R.id.take_photo_view) as ImageView
+        btn = findViewById(R.id.btn) as Button
+        loadingScreen = findViewById(R.id.progBar) as SpinKitView
+        loadingScreen.visibility = GONE
+        selectImage.setOnClickListener({ takePicture() })
 
     }
 
@@ -122,8 +140,6 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    private val cloudinary =
-        Cloudinary("cloudinary://651998212777852:zmLnemqvVP3LI_2HDe1fPB4oG7M@johnsad")
 
     fun capture(requestCode: Int, resultCode: Int) {
         if (requestCode == CAPTURE_IMAGE_REQUEST && resultCode == RESULT_OK) {
@@ -136,31 +152,18 @@ class MainActivity : AppCompatActivity() {
                     ?.setFileName(originalImage.name)
                     ?.load()
 
-                /*TRANSFORMATION WITH UPLOAD*/
-                var response =cloudinary.uploader().upload(
-                    "${originalImage}",
-                    ObjectUtils.asMap(
-                        "transformation",
-                        Transformation<Transformation<*>>()
-                            .width(300)
-                            .height(300) /*Height the one who limit*/
-                            .crop("limit")
-                    )
-                )
-
-                /*RAW UPLOAD*/
-                /* cloudinary.uploader().upload(File("$originalImage"),
-                     ObjectUtils.asMap("sample", "tete")) *//*sample folder*/
-                var eager = response
-                Log.i("PUTANGNA MO", "${eager}")
-
+                clickUpload(this.originalImage)
 
                 var imageBitMap = savedLocal(storageDirectory, originalImage, originalImageBitmap)
 
                 Log.i("test", "Working")
                 selectImage.setImageBitmap(imageBitMap)
 
-                originalImage!!.delete()
+               // Glide.with(this).load("http://goo.gl/gEgYUd").into(selectImage);
+                Glide.with(this)
+                    .load(imageBitMap)
+                .into(selectImage);
+
             } catch (e: IOException) {
                 e.printStackTrace()
             }
@@ -169,6 +172,46 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Photo not captured", Toast.LENGTH_SHORT).show()
             originalImage?.delete()
         }
+    }
+
+    private fun clickUpload(originalImage: File) {
+
+        btn.setOnClickListener {
+            /*TRANSFORMATION WITH UPLOAD*/
+
+            loadingScreen.visibility = VISIBLE
+            Thread {
+                try {
+                    var response = cloudinary.uploader().upload(
+                        "${originalImage}",
+                        ObjectUtils.asMap(
+                            "transformation",
+                            Transformation<Transformation<*>>()
+                                .width(300)
+                                .height(300) /*Height the one who limit*/
+                                .crop("limit")
+                        )
+                    )
+                    /*RAW UPLOAD*/
+                    /* cloudinary.uploader().upload(File("$originalImage"),
+                         ObjectUtils.asMap("sample", "tete")) *//*sample folder*/
+                    var eager = response
+                    Log.i("PUTANGNA MO", "${eager}")
+
+                } catch (e: FileNotFoundException) {
+                    e.printStackTrace()
+                }
+                loadingScreen.post(Runnable {
+                    loadingScreen.visibility = GONE
+                })
+            }.start()
+
+        }
+
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        Glide.get(this).clearMemory()
     }
 
     fun savedLocal(
