@@ -136,7 +136,8 @@ class MainActivity : AppCompatActivity() {
                     ?.setFileName(originalImage.name)
                     ?.load()
 
-                cloudinary.uploader().upload(
+                /*TRANSFORMATION WITH UPLOAD*/
+                var response =cloudinary.uploader().upload(
                     "${originalImage}",
                     ObjectUtils.asMap(
                         "transformation",
@@ -150,66 +151,14 @@ class MainActivity : AppCompatActivity() {
                 /*RAW UPLOAD*/
                 /* cloudinary.uploader().upload(File("$originalImage"),
                      ObjectUtils.asMap("sample", "tete")) *//*sample folder*/
-                Log.i("PUTANGNA MO", "${originalImage}")
+                var eager = response
+                Log.i("PUTANGNA MO", "${eager}")
 
 
-                var resizedImageBitmap = originalImageBitmap
-                val matrix = Matrix()
-                val exif = ExifInterface(originalImage.absolutePath)
-                val orientation = exif.getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION,
-                    ExifInterface.ORIENTATION_NORMAL
-                )
-                if (orientation == 6) { // back cam portrait
-                    Log.i("activity", "orientation 6")
-                    resizedImageBitmap =
-                        Bitmap.createScaledBitmap(originalImageBitmap!!, 1080, 810, false)
-                    matrix.postRotate(90f)
-                } else if (orientation == 8) { // front cam portrait
-                    Log.i("activity", "orientation 8")
-                    resizedImageBitmap =
-                        Bitmap.createScaledBitmap(originalImageBitmap!!, 1080, 810, false)
-                    matrix.postRotate(270f)
-                } else if (orientation == 1) { // landscape
-                    Log.i("activity", "orientation 1")
-                    resizedImageBitmap =
-                        Bitmap.createScaledBitmap(originalImageBitmap!!, 810, 1080, false)
-                } else if (orientation == 3) { //landscape
-                    Log.i("activity", "orientation 3")
-                    resizedImageBitmap =
-                        Bitmap.createScaledBitmap(originalImageBitmap!!, 810, 1080, false)
-                    matrix.postRotate(180f)
-                }
-
-                Log.i("activity", "default yan")
-                val rotatedBitmap = resizedImageBitmap?.let {
-                    Bitmap.createBitmap(
-                        it,
-                        0,
-                        0,
-                        resizedImageBitmap.width,
-                        resizedImageBitmap.height,
-                        matrix,
-                        true
-                    )
-                }
-
-                /*todo saved in local*/
-                if (rotatedBitmap != null) {
-                    if (storageDirectory != null) {
-                        ImageSaverImplService(this)
-                            .setDirectoryName(storageDirectory.absolutePath)
-                            ?.setFileName(resizedImage.name)
-                            ?.save(rotatedBitmap)
-                    }
-                }
-
-
-
-
+                var imageBitMap = savedLocal(storageDirectory, originalImage, originalImageBitmap)
 
                 Log.i("test", "Working")
-                selectImage.setImageBitmap(rotatedBitmap)
+                selectImage.setImageBitmap(imageBitMap)
 
                 originalImage!!.delete()
             } catch (e: IOException) {
@@ -221,4 +170,64 @@ class MainActivity : AppCompatActivity() {
             originalImage?.delete()
         }
     }
+
+    fun savedLocal(
+        storageDirectory: File?,
+        originalImage: File,
+        originalImageBitmap: Bitmap?
+    ): Bitmap? {
+        var resizedImageBitmap = originalImageBitmap
+        val matrix = Matrix()
+        val exif = ExifInterface(originalImage.absolutePath)
+        val orientation = exif.getAttributeInt(
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.ORIENTATION_NORMAL
+        )
+        if (orientation == 6) { // back cam portrait
+            Log.i("activity", "orientation 6")
+            resizedImageBitmap =
+                Bitmap.createScaledBitmap(originalImageBitmap!!, 1080, 810, false)
+            matrix.postRotate(90f)
+        } else if (orientation == 8) { // front cam portrait
+            Log.i("activity", "orientation 8")
+            resizedImageBitmap =
+                Bitmap.createScaledBitmap(originalImageBitmap!!, 1080, 810, false)
+            matrix.postRotate(270f)
+        } else if (orientation == 1) { // landscape
+            Log.i("activity", "orientation 1")
+            resizedImageBitmap =
+                Bitmap.createScaledBitmap(originalImageBitmap!!, 810, 1080, false)
+        } else if (orientation == 3) { //landscape
+            Log.i("activity", "orientation 3")
+            resizedImageBitmap =
+                Bitmap.createScaledBitmap(originalImageBitmap!!, 810, 1080, false)
+            matrix.postRotate(180f)
+        }
+
+        Log.i("activity", "default yan")
+        val rotatedBitmap = resizedImageBitmap?.let {
+            Bitmap.createBitmap(
+                it,
+                0,
+                0,
+                resizedImageBitmap.width,
+                resizedImageBitmap.height,
+                matrix,
+                true
+            )
+        }
+
+        /*todo saved in local*/
+        if (rotatedBitmap != null) {
+            if (storageDirectory != null) {
+                ImageSaverImplService(this)
+                    .setDirectoryName(storageDirectory.absolutePath)
+                    ?.setFileName(resizedImage.name)
+                    ?.save(rotatedBitmap)
+            }
+        }
+
+        return rotatedBitmap
+    }
+
 }
