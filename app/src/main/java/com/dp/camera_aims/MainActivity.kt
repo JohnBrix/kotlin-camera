@@ -35,6 +35,7 @@ import leakcanary.AppWatcher
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.security.AccessController.getContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -51,10 +52,19 @@ class MainActivity : AppCompatActivity() {
     private val cloudinary =
         Cloudinary("cloudinary://651998212777852:zmLnemqvVP3LI_2HDe1fPB4oG7M@johnsad")
 
+    /*TODO
+    *
+    *
+    * https://medium.com/@banmarkovic/what-is-context-in-android-and-which-one-should-you-use-e1a8c6529652
+    *
+    *  FOR REFERENCES IF YOU WANT TO KNOW HOW CONTEXT WORK AND REMOVED MEMORY LEAKS
+    *
+    * */
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        AppWatcher.objectWatcher.watch(this, "View was detached")
+        AppWatcher.objectWatcher.watch(getContext(), "View was detached")
         selectImage = findViewById(R.id.take_photo_view) as ImageView
         btn = findViewById(R.id.btn) as Button
         loadingScreen = findViewById(R.id.progBar) as SpinKitView
@@ -65,7 +75,7 @@ class MainActivity : AppCompatActivity() {
 
     fun takePicture() {
         if (ContextCompat.checkSelfPermission(
-                this,
+                applicationContext,
                 Manifest.permission.CAMERA
             ) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -82,14 +92,14 @@ class MainActivity : AppCompatActivity() {
                         originalImage = createImageUniqueFile()
                     } catch (error: IOException) {
                         Toast.makeText(
-                            this,
+                            getApplicationContext(),
                             "Authorized activity to open a camera",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
                     if (originalImage != null) {
                         val photoURI = FileProvider.getUriForFile(
-                            this,
+                            getApplicationContext(),
                             "com.dp.camera_aims.fileprovider",
                             originalImage
                         )
@@ -147,7 +157,7 @@ class MainActivity : AppCompatActivity() {
                 resizedImage = createImageUniqueFile()
                 val storageDirectory = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
 
-                val originalImageBitmap: Bitmap? = ImageSaverImplService(this)
+                val originalImageBitmap: Bitmap? = ImageSaverImplService(getBaseContext()  )
                     .setDirectoryName(storageDirectory?.absolutePath)
                     ?.setFileName(originalImage.name)
                     ?.load()
@@ -167,9 +177,9 @@ class MainActivity : AppCompatActivity() {
             } catch (e: IOException) {
                 e.printStackTrace()
             }
-            Toast.makeText(this, "Photo captured successfully", Toast.LENGTH_SHORT).show()
+            Toast.makeText(getApplicationContext(), "Photo captured successfully", Toast.LENGTH_SHORT).show()
         } else {
-            Toast.makeText(this, "Photo not captured", Toast.LENGTH_SHORT).show()
+            Toast.makeText(getApplicationContext(), "Photo not captured", Toast.LENGTH_SHORT).show()
             originalImage?.delete()
         }
     }
