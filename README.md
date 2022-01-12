@@ -7,4 +7,5 @@ Kotlin camera for production.
 - Camera capture with permanent images in local saved photos, you can find in location Android/data/com.dp.camera.aims/files/Pictures.
 - A proper threading handler with accurate loading screen.
 - Checking if the internet is exist and not with validation.
+- Leak canary with no memory leak you can check profiling.
 
