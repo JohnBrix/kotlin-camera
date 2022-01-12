@@ -89,10 +89,11 @@
                 app:startIconDrawable="@drawable/person">
 
                 <com.google.android.material.textfield.TextInputEditText
+                   android:id="@+id/link"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@color/colorDark"
-                    android:hint="@string/lName">
+                    android:hint="@string/link">
 
                 </com.google.android.material.textfield.TextInputEditText>
             </com.google.android.material.textfield.TextInputLayout>

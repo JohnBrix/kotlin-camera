@@ -1,18 +1,18 @@
 package com.dp.camera_aims
 
 import android.Manifest
-import android.app.ActivityManager
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.media.ExifInterface
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.os.Process.getUidForName
-import android.os.Process.killProcess
-import android.os.StrictMode
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View.GONE
@@ -30,7 +30,7 @@ import com.cloudinary.Transformation
 import com.cloudinary.utils.ObjectUtils
 import com.dp.camera_aims.service.ImageSaverImplService
 import com.github.ybq.android.spinkit.SpinKitView
-import com.github.ybq.android.spinkit.animation.AnimationUtils.stop
+import com.google.android.material.textfield.TextInputEditText
 import leakcanary.AppWatcher
 import java.io.File
 import java.io.FileNotFoundException
@@ -38,11 +38,13 @@ import java.io.IOException
 import java.security.AccessController.getContext
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.net.ssl.SSLException
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), ComponentCallbacks2 {
 
     private lateinit var selectImage: ImageView
+    private lateinit var link: TextInputEditText
     private lateinit var btn: Button
     private lateinit var loadingScreen: SpinKitView
     private lateinit var originalImage: File
@@ -53,8 +55,7 @@ class MainActivity : AppCompatActivity() {
         Cloudinary("cloudinary://651998212777852:zmLnemqvVP3LI_2HDe1fPB4oG7M@johnsad")
 
     /*TODO
-    *
-    *
+
     * https://medium.com/@banmarkovic/what-is-context-in-android-and-which-one-should-you-use-e1a8c6529652
     *
     *  FOR REFERENCES IF YOU WANT TO KNOW HOW CONTEXT WORK AND REMOVED MEMORY LEAKS
@@ -66,6 +67,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         AppWatcher.objectWatcher.watch(getContext(), "View was detached")
         selectImage = findViewById(R.id.take_photo_view) as ImageView
+        link = findViewById(R.id.link) as TextInputEditText
         btn = findViewById(R.id.btn) as Button
         loadingScreen = findViewById(R.id.progBar) as SpinKitView
         loadingScreen.visibility = GONE
@@ -189,36 +191,90 @@ class MainActivity : AppCompatActivity() {
         btn.setOnClickListener {
             /*TRANSFORMATION WITH UPLOAD*/
 
-            loadingScreen.visibility = VISIBLE
-            Thread {
-                try {
-                    var response = cloudinary.uploader().upload(
-                        "${originalImage}",
-                        ObjectUtils.asMap(
-                            "transformation",
-                            Transformation<Transformation<*>>()
-                                .width(300)
-                                .height(300) /*Height the one who limit*/
-                                .crop("limit")
-                        )
-                    )
-                    /*RAW UPLOAD*/
-                    /* cloudinary.uploader().upload(File("$originalImage"),
-                         ObjectUtils.asMap("sample", "tete")) *//*sample folder*/
-                    var eager = response
-                    Log.i("PUTANGNA MO", "${eager}")
+            if (checkForInternet(this)){
+                Toast.makeText(this, "Connected", Toast.LENGTH_SHORT).show()
+                loadingScreen.visibility = VISIBLE
 
-                } catch (e: FileNotFoundException) {
-                    e.printStackTrace()
+                try {
+                    Thread {
+                        try {
+                            var response = cloudinary.uploader().upload(
+                                "${originalImage}",
+                                ObjectUtils.asMap(
+                                    "transformation",
+                                    Transformation<Transformation<*>>()
+                                        .width(300)
+                                        .height(300) /*Height the one who limit*/
+                                        .crop("limit")
+                                )
+                            )
+
+                            /*Url of permanent image*/
+                            var eager = response.get("secure_url")
+
+                            Log.i("PUTANGNA MO", "${eager}")
+
+                        } catch (e: SSLException ) {
+                            e.printStackTrace()
+                        }
+                        loadingScreen.post(Runnable {
+                            loadingScreen.visibility = GONE
+                            selectImage.setImageDrawable(null);
+
+                        })
+                    }.start()
+                }catch (ex: FileNotFoundException){
+                    ex.printStackTrace()
                 }
-                loadingScreen.post(Runnable {
-                    loadingScreen.visibility = GONE
-                })
-            }.start()
+
+            }
+            else {
+                Toast.makeText(this, "Disconnected", Toast.LENGTH_SHORT).show()
+            }
 
         }
 
     }
+
+    private fun checkForInternet(context: Context): Boolean {
+
+        // register activity with the connectivity manager service
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        // if the android version is equal to M
+        // or greater we need to use the
+        // NetworkCapabilities to check what type of
+        // network has the internet connection
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+
+            // Returns a Network object corresponding to
+            // the currently active default data network.
+            val network = connectivityManager.activeNetwork ?: return false
+
+            // Representation of the capabilities of an active network.
+            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+
+            return when {
+                // Indicates this network uses a Wi-Fi transport,
+                // or WiFi has network connectivity
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+
+                // Indicates this network uses a Cellular transport. or
+                // Cellular has network connectivity
+                activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+
+                // else return false
+                else -> false
+            }
+        } else {
+            // if the android version is below M
+            @Suppress("DEPRECATION") val networkInfo =
+                connectivityManager.activeNetworkInfo ?: return false
+            @Suppress("DEPRECATION")
+            return networkInfo.isConnected
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         Glide.get(this).clearMemory()
@@ -282,5 +338,55 @@ class MainActivity : AppCompatActivity() {
 
         return rotatedBitmap
     }
+    /*TODO NOT WORKING*/
+//    override fun onTrimMemory(level: Int) {
+//
+//        // Determine which lifecycle or system event was raised.
+//        when (level) {
+//
+//            ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+//                /*
+//                   Release any UI objects that currently hold memory.
+//
+//                   The user interface has moved to the background.
+//                */
+//            }
+//
+//            ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE,
+//            ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW,
+//            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL -> {
+//                /*
+//                   Release any memory that your app doesn't need to run.
+//
+//                   The device is running low on memory while the app is running.
+//                   The event raised indicates the severity of the memory-related event.
+//                   If the event is TRIM_MEMORY_RUNNING_CRITICAL, then the system will
+//                   begin killing background processes.
+//                */
+//            }
+//
+//            ComponentCallbacks2.TRIM_MEMORY_BACKGROUND,
+//            ComponentCallbacks2.TRIM_MEMORY_MODERATE,
+//            ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> {
+//                /*
+//                   Release as much memory as the process can.
+//
+//                   The app is on the LRU list and the system is running low on memory.
+//                   The event raised indicates where the app sits within the LRU list.
+//                   If the event is TRIM_MEMORY_COMPLETE, the process will be one of
+//                   the first to be terminated.
+//                */
+//            }
+//
+//            else -> {
+//                /*
+//                  Release any non-critical data structures.
+//
+//                  The app received an unrecognized memory level value
+//                  from the system. Treat this as a generic low-memory message.
+//                */
+//            }
+//        }
+//    }
 
 }
