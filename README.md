@@ -1,5 +1,5 @@
 # kotlin-camera-cloudinary
-Kotlin camera with save image in local storage.
+Kotlin camera for production.
 
 <h1>Camera with Cloudinary </h1>
 
